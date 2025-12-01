@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ujian EKMA4157</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* Mobile Optimization */
+        .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        
+        .option-btn {
+            transition: all 0.2s;
+        }
+        .option-btn:active { transform: scale(0.98); }
+        
+        .feedback-item {
+            border-left: 3px solid transparent;
+            padding-left: 10px;
+            margin-bottom: 8px;
+        }
+        .feedback-item.correct { border-left-color: #22c55e; background: #f0fdf4; }
+        .feedback-item.wrong { border-left-color: #ef4444; background: #fef2f2; }
+        .feedback-item.neutral { border-left-color: #94a3b8; }
+
+        /* Timer Animation */
+        @keyframes pulse-timer {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .timer-low { color: #ef4444; animation: pulse-timer 1s infinite; font-weight: 800; }
+    </style>
+</head>
+<body class="h-[100dvh] flex flex-col overflow-hidden text-slate-800">
+
+    <!-- START SCREEN -->
+    <div id="start-screen" class="absolute inset-0 z-50 bg-white flex flex-col items-center justify-center p-6">
+        <div class="w-20 h-20 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200 mb-6">
+            <svg class="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        </div>
+        <h1 class="text-2xl font-bold text-slate-900 mb-2 text-center">Simulasi Ujian EKMA4157</h1>
+        <p class="text-slate-500 text-center text-sm mb-8 max-w-xs">
+            Dilengkapi analisis detail Penjelasan mengapa jawaban salah dan mengapa jawaban benar.
+        </p>
+        <button onclick="startQuiz()" class="w-full max-w-sm bg-slate-900 text-white py-4 rounded-xl font-bold shadow-xl active:scale-95 transition-transform">
+            Mulai Sekarang
+        </button>
+    </div>
+
+    <!-- HEADER -->
+    <header class="bg-white border-b border-slate-200 px-4 h-16 flex items-center justify-between shrink-0 z-10">
+        <div>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sisa Waktu</p>
+            <p id="timer" class="font-mono text-lg font-bold text-slate-700">90:00</p>
+        </div>
+        <div class="text-right">
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Soal</p>
+            <p id="progress" class="text-sm font-bold text-blue-600">1 / 100</p>
+        </div>
+    </header>
+
+    <!-- MAIN SCROLL AREA -->
+    <main id="main-content" class="flex-1 overflow-y-auto p-4 pb-32 bg-slate-50 scroll-smooth">
+        
+        <!-- QUESTION CARD -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-4">
+            <div class="flex items-center gap-2 mb-3">
+                <span id="module-label" class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-1 rounded border border-blue-100 uppercase">MODUL 1</span>
+                <span id="source-label" class="bg-purple-50 text-purple-700 text-[10px] font-bold px-2 py-1 rounded border border-purple-100 uppercase">TES FORMATIF</span>
+            </div>
+            <h2 id="question-text" class="text-base font-semibold text-slate-800 leading-relaxed">
+                Loading...
+            </h2>
+        </div>
+
+        <!-- OPTIONS -->
+        <div id="options-container" class="space-y-3 mb-6">
+            <!-- Buttons injected here -->
+        </div>
+
+        <!-- DETAILED FEEDBACK BOX -->
+        <div id="feedback-box" class="hidden bg-white rounded-2xl border border-slate-200 p-5 shadow-sm mb-8 animate-fade-in-up">
+            <div class="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+                <div id="fb-icon" class="text-lg"></div>
+                <h3 id="fb-status" class="font-bold text-sm"></h3>
+            </div>
+            
+            <!-- Per-Option Analysis -->
+            <div class="space-y-3">
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Analisis Jawaban:</p>
+                <div id="fb-details" class="text-sm space-y-2">
+                    <!-- Dynamic Content -->
+                </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-100">
+                <p class="text-[10px] text-slate-400 font-bold uppercase">Kesimpulan / Konsep Dasar:</p>
+                <p id="fb-theory" class="text-xs text-slate-600 mt-1 italic"></p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- BOTTOM NAV -->
+    <footer class="bg-white border-t border-slate-200 p-4 absolute bottom-0 w-full safe-area-bottom z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <div class="flex gap-3 max-w-lg mx-auto">
+            <button id="prev-btn" onclick="prevQuestion()" class="px-4 py-3 rounded-xl bg-slate-100 text-slate-400 font-bold disabled:opacity-50">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            </button>
+            <button id="next-btn" onclick="nextQuestion()" class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-200 active:bg-blue-700 transition-colors">
+                Selanjutnya
+            </button>
+        </div>
+    </footer>
+
+    <script>
+        /* DATABASE SOAL DENGAN PENJELASAN PER-OPSI (RATIONALES)
+           Format: 
+           q: Pertanyaan
+           o: [Opsi A, Opsi B, Opsi C, Opsi D]
+           r: [Alasan A, Alasan B, Alasan C, Alasan D] <- Ini fitur barunya
+           a: Index Jawaban Benar (0-3)
+           m: Modul
+           s: Sumber
+           t: Teori Singkat
+        */
+        const database = [
+            // --- MODUL 1 ---
+            {
+                q: "Pendekatan Klasik dan Pendekatan Neoklasik mempunyai kesamaan mendasar dalam memandang organisasi, yaitu sebagai sistem...",
+                o: ["Terbuka", "Sosial", "Tertutup", "Input-Output"],
+                r: [
+                    "Salah. Sistem Terbuka (Open System) adalah ciri khas Pendekatan Modern yang mengakui pengaruh lingkungan.",
+                    "Salah. Sistem Sosial adalah ciri spesifik Neoklasik, tetapi Klasik memandangnya sebagai sistem teknis/mekanis.",
+                    "Benar. Keduanya (Klasik & Neoklasik) sama-sama mengabaikan pengaruh lingkungan luar, sehingga disebut Sistem Tertutup.",
+                    "Salah. Input-Output adalah konsep sistem secara umum, tetapi tidak spesifik menjelaskan kesamaan isolasi Klasik/Neoklasik."
+                ],
+                a: 2,
+                m: "Modul 1", s: "Tes Formatif",
+                t: "Teori Klasik & Neoklasik menganggap organisasi bisa berjalan efisien tanpa gangguan eksternal."
+            },
+            {
+                q: "Untuk menentukan jumlah tenaga kerja yang diperlukan dalam menyelesaikan suatu kegiatan, digunakan pendekatan...",
+                o: ["Klasik", "Neoklasik", "Modern", "Tradisional"],
+                r: [
+                    "Benar. Pendekatan Klasik (Scientific Management) fokus pada pengukuran beban kerja, waktu, dan gerak untuk efisiensi.",
+                    "Salah. Neoklasik fokus pada aspek psikologis dan hubungan antar manusia, bukan hitungan beban kerja teknis.",
+                    "Salah. Pendekatan Modern fokus pada adaptasi lingkungan.",
+                    "Salah. Tidak ada istilah pendekatan 'Tradisional' yang spesifik dalam konteks teori ini (biasanya merujuk ke Pra-Klasik)."
+                ],
+                a: 0,
+                m: "Modul 1", s: "Tes Formatif",
+                t: "Scientific Management (Taylor) menggunakan metode ilmiah untuk menentukan standar kerja."
+            },
+            {
+                q: "Sebuah organisasi yang mengusahakan karyawannya disiplin tinggi (aturan ketat) tetapi tetap nyaman dan termotivasi, sesungguhnya menggabungkan pendekatan...",
+                o: ["Klasik Murni", "Neoklasik Murni", "Modern", "Klasik dan Neoklasik"],
+                r: [
+                    "Salah. Klasik murni cenderung kaku dan kurang peduli kenyamanan.",
+                    "Salah. Neoklasik murni kadang kurang dalam struktur disiplin formal.",
+                    "Salah. Modern fokus ke luar (eksternal). Kasus ini membahas internal.",
+                    "Benar. Disiplin (Klasik) digabung dengan kenyamanan/motivasi (Neoklasik) adalah praktik manajemen internal yang umum."
+                ],
+                a: 3, // Opsi D dimodifikasi untuk logika soal cerita
+                m: "Modul 1", s: "Analisis Latihan",
+                t: "Integrasi efisiensi teknis (Klasik) dan human relations (Neoklasik)."
+            },
+
+            // --- MODUL 2 ---
+            {
+                q: "Menurut Duncan, elemen mana yang lebih besar pengaruhnya terhadap ketidakpastian lingkungan?",
+                o: ["Kompleksitas (Jumlah elemen)", "Stabilitas (Tingkat perubahan)", "Ukuran Organisasi", "Jumlah Pesaing"],
+                r: [
+                    "Salah. Banyak elemen tapi stabil masih mudah diprediksi.",
+                    "Benar. Lingkungan yang Labil (berubah-ubah) sulit diprediksi meskipun elemennya sedikit. Jadi Stabilitas lebih berpengaruh.",
+                    "Salah. Ini faktor internal, bukan dimensi lingkungan Duncan.",
+                    "Salah. Ini hanya salah satu bagian dari kompleksitas."
+                ],
+                a: 1,
+                m: "Modul 2", s: "Analisis Latihan",
+                t: "Dimensi Ketidakpastian Duncan: Kompleksitas vs Stabilitas."
+            },
+            {
+                q: "Pada tekstur lingkungan 'Diganggu Bereaksi' (Disturbed Reactive), organisasi memerlukan...",
+                o: ["Hanya efisiensi internal", "Unit pengamatan pesaing", "Sentralisasi total", "Pasrah pada nasib"],
+                r: [
+                    "Salah. Efisiensi saja tidak cukup karena pesaing bisa menghancurkan pasar.",
+                    "Benar. Dalam lingkungan oligopoli ini, aksi satu perusahaan memancing reaksi pesaing, jadi perlu intelijen pasar.",
+                    "Salah. Sentralisasi justru memperlambat reaksi.",
+                    "Salah. Organisasi harus proaktif bereaksi."
+                ],
+                a: 1,
+                m: "Modul 2", s: "Tes Formatif",
+                t: "Tekstur Lingkungan (Emery & Trist): Disturbed Reactive = Oligopoli."
+            },
+            
+            // --- MODUL 3 ---
+            {
+                q: "Metode 'Satisfying' dalam menangani sasaran yang berlawanan berarti...",
+                o: ["Mencapai hasil maksimal di semua bidang", "Mengorbankan satu sasaran demi yang lain", "Menerima hasil 'cukup' agar semua sasaran terpenuhi minimal", "Menunda semua target"],
+                r: [
+                    "Salah. Optimalisasi total sulit dicapai saat sasaran bertentangan dan waktu terbatas.",
+                    "Salah. Itu metode prioritas/sekuensial, bukan satisfying.",
+                    "Benar. Satisfying (Herbert Simon) adalah mencari solusi yang memuaskan kriteria minimal semua pihak.",
+                    "Salah. Ini bukan solusi manajemen."
+                ],
+                a: 2,
+                m: "Modul 3", s: "Rangkuman",
+                t: "Bounded Rationality: Manusia cenderung mencari kepuasan (satisfying) bukan optimalisasi."
+            },
+            
+            // --- MODUL 4 ---
+            {
+                q: "Salah satu kritik terhadap Birokrasi Weber adalah...",
+                o: ["Terlalu fleksibel", "Mengabaikan aspek kemanusiaan dan kaku", "Tidak punya aturan jelas", "Terlalu cepat mengambil keputusan"],
+                r: [
+                    "Salah. Birokrasi justru dikritik karena terlalu kaku.",
+                    "Benar. Sifat impersonal dan ketaatan pada aturan membuat birokrasi sering dianggap tidak manusiawi dan lamban.",
+                    "Salah. Birokrasi justru penuh dengan aturan tertulis.",
+                    "Salah. Birokrasi cenderung lambat karena rantai komando panjang."
+                ],
+                a: 1,
+                m: "Modul 4", s: "Analisis Latihan",
+                t: "Disfungsi Birokrasi (Merton/Gouldner)."
+            },
+            {
+                q: "Krisis yang muncul setelah fase pertumbuhan 'Pendelegasian' adalah...",
+                o: ["Krisis Kepemimpinan", "Krisis Otonomi", "Krisis Kontrol", "Krisis Birokrasi"],
+                r: [
+                    "Salah. Ini terjadi setelah fase Kreativitas (awal).",
+                    "Salah. Ini terjadi setelah fase Pengarahan.",
+                    "Benar. Karena delegasi berlebihan, manajemen pusat kehilangan kendali atas unit-unit bawah.",
+                    "Salah. Ini terjadi setelah fase Koordinasi."
+                ],
+                a: 2,
+                m: "Modul 4", s: "Tes Formatif",
+                t: "Model Pertumbuhan Greiner."
+            },
+
+            // --- MODUL 5 ---
+            {
+                q: "Rentang kendali (span of control) yang lebar menyebabkan struktur organisasi berbentuk...",
+                o: ["Tall (Tinggi)", "Flat (Mendatar)", "Rumit", "Sentralistik"],
+                r: [
+                    "Salah. Struktur tinggi terjadi jika rentang kendali sempit (sedikit bawahan per atasan).",
+                    "Benar. Jika satu atasan membawahi banyak orang, jumlah level manajemen berkurang (gepeng/flat).",
+                    "Salah. Justru komunikasi bisa lebih cepat (tidak rumit birokrasinya).",
+                    "Salah. Flat cenderung terdesentralisasi."
+                ],
+                a: 1,
+                m: "Modul 5", s: "Tes Formatif",
+                t: "Hubungan Rentang Kendali dan Bentuk Struktur."
+            },
+
+            // --- MODUL 6 ---
+            {
+                q: "Mengapa tenaga profesional (dokter/dosen) biasanya dikelola dengan formalisasi (aturan tertulis) rendah?",
+                o: ["Karena mereka malas membaca aturan", "Karena mereka sudah memiliki etika profesi (internalized)", "Karena pekerjaan mereka sangat mudah", "Karena tidak ada standar baku"],
+                r: [
+                    "Salah. Alasan utamanya bukan kemalasan.",
+                    "Benar. Profesionalisasi adalah bentuk 'formalisasi internal'. Mereka bekerja berdasarkan standar profesi, bukan aturan kantor.",
+                    "Salah. Pekerjaan profesional justru kompleks.",
+                    "Salah. Standarnya ada pada profesi, bukan pada regulasi kantor."
+                ],
+                a: 1,
+                m: "Modul 6", s: "Analisis Latihan",
+                t: "Substitusi Formalisasi dengan Profesionalisasi."
+            },
+
+            // --- MODUL 7 ---
+            {
+                q: "Desentralisasi wewenang paling diperlukan pada fungsi...",
+                o: ["Keuangan", "Pemasaran", "Akuntansi", "Legal"],
+                r: [
+                    "Salah. Keuangan biasanya sentralistik untuk kontrol aset.",
+                    "Benar. Pemasaran berhadapan dengan konsumen lokal yang beragam, butuh keputusan cepat di lapangan.",
+                    "Salah. Akuntansi butuh standar baku (sentral).",
+                    "Salah. Legal butuh konsistensi hukum (sentral)."
+                ],
+                a: 1,
+                m: "Modul 7", s: "Tes Formatif",
+                t: "Faktor Kontingensi dalam Desentralisasi."
+            },
+            
+            // --- MODUL 8 ---
+            {
+                q: "Menurut Woodward, produksi massal (Mass Production) paling cocok menggunakan struktur...",
+                o: ["Organik", "Mekanistik", "Adhocracy", "Simple Structure"],
+                r: [
+                    "Salah. Organik cocok untuk produksi Unit atau Proses (Kimia).",
+                    "Benar. Produksi massal bersifat rutin, repetitif, dan standar, sehingga cocok dengan birokrasi mekanistik.",
+                    "Salah. Adhocracy untuk inovasi tinggi.",
+                    "Salah. Simple untuk perusahaan kecil."
+                ],
+                a: 1,
+                m: "Modul 8", s: "Rangkuman",
+                t: "Imperatif Teknologi Joan Woodward."
+            },
+
+            // --- MODUL 9 ---
+            {
+                q: "Ciri utama struktur organisasi yang SUDAH TIDAK SESUAI kebutuhan adalah...",
+                o: ["Organisasi untung besar", "Terjadi konflik, lamban, dan keputusan buruk", "Karyawan bertambah banyak", "Punya banyak cabang"],
+                r: [
+                    "Salah. Untung besar tanda organisasi sehat.",
+                    "Benar. Tiga gejala patologis: Respon lambat, kualitas keputusan turun, dan konflik antar bagian.",
+                    "Salah. Pertumbuhan karyawan hal wajar.",
+                    "Salah. Punya cabang adalah strategi, bukan ciri sakit."
+                ],
+                a: 1,
+                m: "Modul 9", s: "Tes Formatif",
+                t: "Evaluasi Efektivitas Struktur."
+            }
+        ];
+
+        // MENGGANDAKAN SOAL UNTUK SIMULASI 100 NOMOR
+        // (Dalam real production, array 'database' di atas harus diisi 100 soal unik)
+        const fullQuestions = [...database, ...database, ...database, ...database, ...database, ...database, ...database, ...database].slice(0, 100);
+
+        // STATE
+        let currentIdx = 0;
+        let timeLeft = 90 * 60; // 90 Menit
+        let timerInterval;
+        let userAnswers = new Array(100).fill(null); // Menyimpan index jawaban user
+
+        // DOM ELEMENTS
+        const el = {
+            start: document.getElementById('start-screen'),
+            header: document.querySelector('header'),
+            main: document.getElementById('main-content'),
+            footer: document.querySelector('footer'),
+            timer: document.getElementById('timer'),
+            progress: document.getElementById('progress'),
+            qText: document.getElementById('question-text'),
+            modLabel: document.getElementById('module-label'),
+            srcLabel: document.getElementById('source-label'),
+            optsContainer: document.getElementById('options-container'),
+            fbBox: document.getElementById('feedback-box'),
+            fbStatus: document.getElementById('fb-status'),
+            fbDetails: document.getElementById('fb-details'),
+            fbTheory: document.getElementById('fb-theory'),
+            fbIcon: document.getElementById('fb-icon'),
+            btnNext: document.getElementById('next-btn'),
+            btnPrev: document.getElementById('prev-btn')
+        };
+
+        function startQuiz() {
+            el.start.classList.add('hidden');
+            startTimer();
+            loadQuestion(0);
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                const m = Math.floor(timeLeft / 60);
+                const s = timeLeft % 60;
+                el.timer.textContent = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+                
+                if (timeLeft < 300) el.timer.classList.add('timer-low'); // Merah jika < 5 menit
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    alert("Waktu Habis!");
+                    // Handle finish logic here
+                }
+            }, 1000);
+        }
+
+        function loadQuestion(idx) {
+            currentIdx = idx;
+            const data = fullQuestions[idx];
+
+            // Reset UI
+            el.qText.textContent = data.q;
+            el.modLabel.textContent = data.m;
+            el.srcLabel.textContent = data.s;
+            el.progress.textContent = `${idx + 1} / 100`;
+            el.optsContainer.innerHTML = '';
+            el.fbBox.classList.add('hidden');
+            
+            // Render Options
+            const answered = userAnswers[idx];
+
+            data.o.forEach((opt, i) => {
+                const btn = document.createElement('button');
+                btn.className = `option-btn w-full text-left p-4 rounded-xl border border-slate-200 bg-white mb-2 flex items-start gap-3 shadow-sm`;
+                
+                // State Logic
+                if (answered !== null) {
+                    btn.disabled = true;
+                    if (i === data.a) {
+                        // Ini Jawaban Benar
+                        btn.className += " ring-2 ring-green-500 bg-green-50 border-green-200";
+                        btn.innerHTML = `<span class="flex-none w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center font-bold text-xs">✓</span> <span>${opt}</span>`;
+                    } else if (i === answered) {
+                        // Ini Jawaban Salah yang dipilih user
+                        btn.className += " ring-2 ring-red-500 bg-red-50 border-red-200";
+                        btn.innerHTML = `<span class="flex-none w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-xs">✕</span> <span>${opt}</span>`;
+                    } else {
+                        btn.className += " opacity-50";
+                        btn.innerHTML = `<span class="flex-none w-6 h-6 rounded-full border border-slate-300 flex items-center justify-center font-bold text-xs text-slate-400">${String.fromCharCode(65+i)}</span> <span>${opt}</span>`;
+                    }
+                } else {
+                    btn.onclick = () => selectAnswer(i);
+                    btn.className += " hover:bg-slate-50 active:bg-blue-50";
+                    btn.innerHTML = `<span class="flex-none w-6 h-6 rounded-full border border-slate-300 flex items-center justify-center font-bold text-xs text-slate-400">${String.fromCharCode(65+i)}</span> <span>${opt}</span>`;
+                }
+                
+                el.optsContainer.appendChild(btn);
+            });
+
+            // Show Feedback if Answered
+            if (answered !== null) {
+                showFeedback(data, answered);
+            }
+
+            // Nav Buttons
+            el.btnPrev.disabled = idx === 0;
+            el.btnNext.textContent = (idx === fullQuestions.length - 1) ? "Selesai" : "Selanjutnya";
+            
+            // Scroll Top
+            el.main.scrollTo(0,0);
+        }
+
+        function selectAnswer(choiceIdx) {
+            userAnswers[currentIdx] = choiceIdx;
+            loadQuestion(currentIdx); // Re-render to show feedback
+        }
+
+        function showFeedback(data, userChoice) {
+            el.fbBox.classList.remove('hidden');
+            const isCorrect = userChoice === data.a;
+
+            // Header Feedback
+            if (isCorrect) {
+                el.fbStatus.textContent = "Jawaban Benar!";
+                el.fbStatus.className = "font-bold text-sm text-green-700";
+                el.fbIcon.innerHTML = "✅";
+                el.fbBox.className = "bg-green-50 rounded-2xl border border-green-200 p-5 shadow-sm mb-8";
+            } else {
+                el.fbStatus.textContent = "Jawaban Kurang Tepat";
+                el.fbStatus.className = "font-bold text-sm text-red-700";
+                el.fbIcon.innerHTML = "❌";
+                el.fbBox.className = "bg-white rounded-2xl border border-red-200 p-5 shadow-sm mb-8";
+            }
+
+            // Render Per-Option Rationale
+            el.fbDetails.innerHTML = '';
+            data.o.forEach((opt, i) => {
+                const div = document.createElement('div');
+                div.className = "feedback-item p-3 rounded text-xs leading-relaxed";
+                
+                // Logic pewarnaan rationale
+                if (i === data.a) {
+                    div.className += " correct text-green-800";
+                    div.innerHTML = `<strong class="block mb-1">Opsi ${String.fromCharCode(65+i)} (Benar):</strong> ${data.r[i]}`;
+                } else if (i === userChoice && !isCorrect) {
+                    div.className += " wrong text-red-800";
+                    div.innerHTML = `<strong class="block mb-1">Opsi ${String.fromCharCode(65+i)} (Pilihanmu):</strong> ${data.r[i]}`;
+                } else {
+                    div.className += " neutral text-slate-500 bg-slate-50";
+                    div.innerHTML = `<strong class="block mb-1 text-slate-700">Opsi ${String.fromCharCode(65+i)}:</strong> ${data.r[i]}`;
+                }
+                el.fbDetails.appendChild(div);
+            });
+
+            el.fbTheory.textContent = data.t;
+        }
+
+        function nextQuestion() {
+            if (currentIdx < fullQuestions.length - 1) loadQuestion(currentIdx + 1);
+        }
+
+        function prevQuestion() {
+            if (currentIdx > 0) loadQuestion(currentIdx - 1);
+        }
+
+    </script>
+</body>
+</html>
+
